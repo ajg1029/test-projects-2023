@@ -9,6 +9,8 @@
 </template>
 
 <script>
+import '@/assets/css/AppDefault.css'
+
 export default {
   name: 'App',
   components: {}
