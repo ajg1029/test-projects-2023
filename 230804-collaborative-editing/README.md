@@ -1,19 +1,3 @@
-# 230804-collaborative-editing
-
-## Project setup
-```
-npm install
-```
-
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+### Text002
+- 엔터 눌렀을 때 바로 밑에 새로운 textarea 생성 & focus
+- shift+엔터 누르면 현재 위치한 textarea 안에서 줄바꿈
