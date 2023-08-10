@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebGPU Life</title>
+</head>
+<body>
+  <canvas width="256" height="256"></canvas>
+
+  <script type="module">
+
+    // 1. Initialize WebGPU
+    const canvas = document.querySelector("canvas");
+    if (!navigator.gpu) {
+      throw new Error("WebGPU not supported on this browser.");
+    }
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+      throw new Error("No appropriate GPUAdapter found.");
+    }
+    const context = canvas.getContext("webgpu");
+    const device = await adapter.requestDevice();
+    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    context.configure({
+      device: device,
+      format: canvasFormat,
+    });
+
+    // 2. Define vertices
+    const vertices = new Float32Array([
+     -0.8, -0.8,
+      0.8, -0.8,
+      0.8,  0.8,
+
+     -0.8, -0.8,
+      0.8,  0.8,
+     -0.8,  0.8,
+    ]);
+
+    // 3. Create vertex buffer
+    const vertexBuffer = device.createBuffer({
+      label: "Cell vertices",
+      size: vertices.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(vertexBuffer, 0, vertices); // bufferOffset = 0
+
+    // 4. Create vertex buffer layout
+    const vertexBufferLayout = {
+      arrayStride: 8,
+      attributes: [{
+        format: "float32x2",
+        offset: 0,
+        shaderLocation: 0, // Cell shader 에서, @location(0)
+      }],
+    };
+
+    // 5. Shader 생성
+    // @vertex 의 vec4f(pos.x, pos.y, 0, 1) 는 위치를 나타내며 각각 X, Y, Z, W 이다. W 는 4차원 축이 아닌 행렬 계산을 위한 값
+    // @fragment 의 vec4f(0.3, 0.1, 0.1, 1) 는 색상을 나타내며 각각 Red, Green, Blue, Alpha 이다.
+    const cellShaderModule = device.createShaderModule({
+      label: "Cell shader",
+      code: `
+        @vertex
+        fn vertexMain(@location(0) pos: vec2f) -> @builtin(position) vec4f {
+          return vec4f(pos.x, pos.y, 0, 1);
+        }
+        @fragment
+        fn fragmentMain() -> @location(0) vec4f {
+          return vec4f(0.3, 0.1, 0.1, 1); 
+        }
+      `
+    });
+
+    // 6. Render pipeline 생성
+    const cellPipeline = device.createRenderPipeline({
+      label: "Cell pipeline",
+      layout: "auto",
+      vertex: {
+        module: cellShaderModule,
+        entryPoint: "vertexMain",
+        buffers: [vertexBufferLayout]
+      },
+      fragment: {
+        module: cellShaderModule,
+        entryPoint: "fragmentMain",
+        targets: [{
+          format: canvasFormat
+        }]
+      }
+    });
+
+    // 7. Render
+    const encoder = device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [{
+        view: context.getCurrentTexture().createView(),
+        clearValue: { r: 0.5, g: 0.5, b: 0.9, a: 1 },
+        loadOp: "clear",
+        storeOp: "store",
+      }]
+    });
+    pass.setPipeline(cellPipeline);
+    pass.setVertexBuffer(0, vertexBuffer);
+    pass.draw(vertices.length / 2); // 2차원 좌표 6개
+    pass.end();
+    device.queue.submit([encoder.finish()]);
+
+  </script>
+</body>
+</html>
