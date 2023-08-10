@@ -6,35 +6,21 @@
 </head>
 <body>
   <canvas width="512" height="512"></canvas>
+
   <script type="module">
     const canvas = document.querySelector("canvas");
-
-    // Your WebGPU code will begin here!
-
-    console.log(canvas)
-    console.log(navigator.gpu)
-
     if (!navigator.gpu) {
       throw new Error("WebGPU not supported on this browser.");
     }
-
     const adapter = await navigator.gpu.requestAdapter();
-
-    console.log(adapter)
-
     if (!adapter) {
       throw new Error("No appropriate GPUAdapter found.");
     }
 
-    const device = await adapter.requestDevice();
-
-    console.log(device)
-
     const context = canvas.getContext("webgpu");
-    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
 
-    console.log(context)
-    console.log(canvasFormat)
+    const device = await adapter.requestDevice();
+    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
 
     context.configure({
       device: device,
@@ -42,8 +28,6 @@
     });
 
     const encoder = device.createCommandEncoder();
-
-    console.log(encoder)
 
     const pass = encoder.beginRenderPass({
       colorAttachments: [{
@@ -53,17 +37,9 @@
         storeOp: "store",
       }]
     });
-
     pass.end();
-
-    // const commandBuffer = encoder.finish();
-    // device.queue.submit([commandBuffer]);
-
-    // Finish the command buffer and immediately submit it.
+    
     device.queue.submit([encoder.finish()]);
-
-
-
 
   </script>
 </body>
